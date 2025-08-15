@@ -14,8 +14,8 @@ import {
   SelectValue,
   Textarea,
 } from "@/components/ui";
+import { useAddIdeaDialog } from "@/hooks/useAddIdeaDialog";
 import type { Campaign, CampaignIdea } from "@/hooks/useIdeaBank";
-import { api } from "@/lib/api";
 import { Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -50,8 +50,8 @@ export const AddIdeaDialog = ({
     content_type: "",
     variation_type: "a",
   });
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isGenerating } = useAddIdeaDialog();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -90,58 +90,6 @@ export const AddIdeaDialog = ({
       } finally {
         setIsSubmitting(false);
       }
-    }
-  };
-
-  const handleGenerateWithAI = async () => {
-    if (!campaign || !formData.platform || !formData.content_type) {
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      // Debug logging
-      console.log("=== DEBUG: Sending data to AI ===");
-      console.log("Form data:", formData);
-      console.log("Campaign ID:", campaign.id);
-
-      const requestData = {
-        title: formData.title,
-        description: formData.description,
-        content: formData.content,
-        platform: formData.platform,
-        content_type: formData.content_type,
-        variation_type: formData.variation_type || "a",
-      };
-
-      console.log("Request data:", requestData);
-      console.log("================================");
-
-      // Call the AI generation endpoint
-      const response = await api.post(
-        `/api/v1/ideabank/campaigns/${campaign.id}/generate-idea/`,
-        requestData
-      );
-
-      const generatedIdea = response.data;
-      console.log("=== DEBUG: AI Response ===", generatedIdea);
-
-      // Update form with AI-generated content
-      setFormData((prev) => ({
-        ...prev,
-        title: generatedIdea.title || prev.title,
-        description: generatedIdea.description || prev.description,
-        content: generatedIdea.content || prev.content,
-      }));
-
-      toast.success(
-        "Ideia gerada com IA com sucesso! Revise e ajuste conforme necessário."
-      );
-    } catch (error) {
-      console.error("Error generating idea:", error);
-      toast.error("Erro ao conectar com o servidor");
-    } finally {
-      setIsGenerating(false);
     }
   };
 

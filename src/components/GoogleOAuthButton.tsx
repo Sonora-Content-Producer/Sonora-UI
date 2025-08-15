@@ -8,13 +8,13 @@ interface GoogleOAuthButtonProps {
   children?: React.ReactNode;
 }
 
-export function GoogleOAuthButton({
+export const GoogleOAuthButton = ({
   onClick,
   disabled,
   variant = "outline",
   className,
   children,
-}: GoogleOAuthButtonProps) {
+}: GoogleOAuthButtonProps) => {
   return (
     <Button
       type="button"
@@ -44,4 +44,4 @@ export function GoogleOAuthButton({
       {children || "Continuar com Google"}
     </Button>
   );
-}
+};

@@ -7,7 +7,7 @@ interface LoadingProps {
   text?: string;
 }
 
-function Loading({ className, size = "md", text }: LoadingProps) {
+const Loading = ({ className, size = "md", text }: LoadingProps) => {
   const sizeClasses = {
     sm: "h-4 w-4",
     md: "h-8 w-8",
@@ -35,14 +35,14 @@ function Loading({ className, size = "md", text }: LoadingProps) {
       )}
     </div>
   );
-}
+};
 
 interface LoadingPageProps {
   text?: string;
   className?: string;
 }
 
-function LoadingPage({ text, className }: LoadingPageProps) {
+const LoadingPage = ({ text, className }: LoadingPageProps) => {
   return (
     <div
       className={cn(
@@ -55,6 +55,6 @@ function LoadingPage({ text, className }: LoadingPageProps) {
       </div>
     </div>
   );
-}
+};
 
 export { Loading, LoadingPage };

@@ -13,15 +13,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSocialAccounts } from "@/hooks/useSocialAccounts";
 import { Link } from "react-router-dom";
 
-export function AccountSettingsPage() {
+export const AccountSettingsPage = () => {
   const { user, logout } = useAuth();
   const {
-    socialAccountsData,
+    googleAccount,
     isLoading,
     error,
-    handleDisconnect,
-    handleConnectGoogle,
-    getGoogleAccount,
+    disconnectAccount,
     isDisconnecting,
   } = useSocialAccounts();
 
@@ -32,8 +30,6 @@ export function AccountSettingsPage() {
       </div>
     );
   }
-
-  const googleAccount = getGoogleAccount();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
@@ -146,7 +142,7 @@ export function AccountSettingsPage() {
 
                         {googleAccount ? (
                           <Button
-                            onClick={() => handleDisconnect(googleAccount)}
+                            onClick={() => disconnectAccount(googleAccount.id)}
                             variant="outline"
                             disabled={isDisconnecting}
                           >
@@ -155,7 +151,7 @@ export function AccountSettingsPage() {
                               : "Desconectar"}
                           </Button>
                         ) : (
-                          <GoogleOAuthButton onClick={handleConnectGoogle}>
+                          <GoogleOAuthButton onClick={() => {}}>
                             Conectar Google
                           </GoogleOAuthButton>
                         )}
@@ -164,7 +160,7 @@ export function AccountSettingsPage() {
                   </Card>
                 </div>
 
-                {socialAccountsData?.total_count === 0 && (
+                {!googleAccount && (
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-center py-8 text-gray-500">
@@ -183,4 +179,4 @@ export function AccountSettingsPage() {
       </div>
     </div>
   );
-}
+};

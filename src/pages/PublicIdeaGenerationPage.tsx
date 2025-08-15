@@ -9,9 +9,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import axios from "axios";
+import { usePublicIdeaGeneration } from "@/hooks/usePublicIdeaGeneration";
 import { ArrowLeft, Copy, Download, Lightbulb } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -31,29 +31,18 @@ interface GeneratedIdea {
 }
 
 interface PublicIdeaGenerationFormData {
-  // Campaign info
   title: string;
   description?: string;
-
-  // Campaign objective
   objectives: string[];
-
-  // Target persona
+  platforms: string[];
+  content_types?: Record<string, string[]>;
+  voice_tone: string;
   persona_age?: string;
   persona_location?: string;
   persona_income?: string;
   persona_interests?: string;
   persona_behavior?: string;
   persona_pain_points?: string;
-
-  // Social platforms and content types
-  platforms: string[];
-  content_types?: Record<string, string[]>;
-
-  // Voice tone
-  voice_tone: string;
-
-  // Campaign details for AI generation
   product_description?: string;
   value_proposition?: string;
   campaign_urgency?: string;
@@ -61,57 +50,18 @@ interface PublicIdeaGenerationFormData {
 
 export const PublicIdeaGenerationPage = () => {
   const [generatedIdeas, setGeneratedIdeas] = useState<GeneratedIdea[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [options, setOptions] = useState<{
-    objectives: { value: string; label: string }[];
-    content_types: Record<string, string[]>;
-    platforms: { value: string; label: string }[];
-    voice_tones: { value: string; label: string }[];
-  } | null>(null);
-  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
-
-  // Fetch options on component mount
-  useEffect(() => {
-    const fetchOptions = async () => {
-      try {
-        const response = await axios.get(
-          `${
-            import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
-          }/api/v1/ideabank/public/options/`
-        );
-        setOptions(response.data);
-      } catch (error) {
-        console.error("Erro ao carregar opções:", error);
-        toast.error("Erro ao carregar opções de geração");
-      } finally {
-        setIsLoadingOptions(false);
-      }
-    };
-
-    fetchOptions();
-  }, []);
+  const { options, isLoadingOptions, generateIdeasAsync, isGenerating } =
+    usePublicIdeaGeneration();
 
   const handleGenerateIdeas = async (
     formData: PublicIdeaGenerationFormData
   ) => {
-    setIsGenerating(true);
     try {
-      const response = await axios.post(
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
-        }/api/v1/ideabank/public/generate/`,
-        formData
-      );
-
-      setGeneratedIdeas(response.data.ideas);
-      toast.success("Ideias geradas com sucesso!");
-    } catch (error: unknown) {
+      const result = await generateIdeasAsync(formData);
+      setGeneratedIdeas(result.ideas);
+    } catch (error) {
+      // Error handling is done in the hook
       console.error("Erro ao gerar ideias:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Erro ao gerar ideias";
-      toast.error(errorMessage);
-    } finally {
-      setIsGenerating(false);
     }
   };
 

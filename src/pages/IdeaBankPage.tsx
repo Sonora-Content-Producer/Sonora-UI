@@ -29,13 +29,12 @@ import {
   type Campaign,
   type CampaignIdea,
 } from "@/hooks/useIdeaBank";
+import { useIdeaOperations } from "@/hooks/useIdeaOperations";
 import { useSubscription } from "@/hooks/useSubscription";
-import { api } from "@/lib/api";
 import { geminiKeyApi } from "@/lib/gemini-key-api";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 export const IdeaBankPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -48,9 +47,10 @@ export const IdeaBankPage = () => {
   const [editorIdeas, setEditorIdeas] = useState<CampaignIdea[]>([]);
   const [showSubscriptionOverlay, setShowSubscriptionOverlay] = useState(false);
 
-  const { campaigns, isLoading, refetchCampaigns } = useIdeaBank();
+  const { campaigns, isLoading } = useIdeaBank();
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
-  const queryClient = useQueryClient();
+  const { deleteIdea, deleteCampaign, addIdea, updateCampaign } =
+    useIdeaOperations();
 
   const { data: keyStatus, isLoading: isLoadingApiKeyStatus } = useQuery({
     queryKey: ["gemini-key-status"],
@@ -72,94 +72,6 @@ export const IdeaBankPage = () => {
     setIsDialogOpen(true);
   };
 
-  const deleteIdeaMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await api.delete(`/api/v1/ideabank/ideas/${id}/`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["campaigns-with-ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["campaign-stats"] });
-      toast.success("Ideia deletada com sucesso!");
-      setDeletingIdea(null);
-    },
-    onError: () => {
-      toast.error("Erro ao deletar ideia");
-    },
-  });
-
-  const deleteCampaignMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await api.delete(`/api/v1/ideabank/campaigns/${id}/`);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["campaigns-with-ideas"] });
-      toast.success("Campanha excluída com sucesso!");
-      setDeletingCampaign(null);
-    },
-    onError: (error) => {
-      toast.error("Erro ao excluir campanha");
-      console.error("Error deleting campaign:", error);
-    },
-  });
-
-  const addIdeaMutation = useMutation({
-    mutationFn: async ({
-      campaignId,
-      ideaData,
-    }: {
-      campaignId: number;
-      ideaData: {
-        title: string;
-        description: string;
-        content: string;
-        platform: string;
-        content_type: string;
-        variation_type: string;
-      };
-    }) => {
-      // Use the AI generation endpoint instead of the basic add endpoint
-      const response = await api.post(
-        `/api/v1/ideabank/campaigns/${campaignId}/generate-idea/`,
-        ideaData
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["campaigns-with-ideas"] });
-      toast.success("Ideia criada com IA com sucesso!");
-      refetchCampaigns();
-    },
-    onError: (error) => {
-      toast.error("Erro ao criar ideia");
-      console.error("Error creating idea:", error);
-    },
-  });
-
-  const updateCampaignMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: Partial<Campaign>;
-    }) => {
-      const response = await api.patch(
-        `/api/v1/ideabank/campaigns/${id}/`,
-        data
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["campaigns-with-ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["campaign-stats"] });
-      toast.success("Campanha atualizada com sucesso!");
-    },
-    onError: () => {
-      toast.error("Erro ao atualizar campanha");
-    },
-  });
-
   // Handlers
 
   const handleEditIdea = (idea: CampaignIdea) => {
@@ -176,7 +88,7 @@ export const IdeaBankPage = () => {
     updatedData: Partial<Campaign>
   ) => {
     // Update campaign using the API
-    updateCampaignMutation.mutate({ id: campaign.id, data: updatedData });
+    updateCampaign({ id: campaign.id, data: updatedData });
   };
 
   const handleDeleteCampaign = (campaign: Campaign) => {
@@ -195,7 +107,7 @@ export const IdeaBankPage = () => {
     }
   ): Promise<CampaignIdea> => {
     return new Promise<CampaignIdea>((resolve, reject) => {
-      addIdeaMutation.mutate(
+      addIdea(
         { campaignId, ideaData },
         {
           onSuccess: (data) => {
@@ -211,12 +123,14 @@ export const IdeaBankPage = () => {
 
   const handleConfirmDeleteIdea = () => {
     if (!deletingIdea) return;
-    deleteIdeaMutation.mutate(deletingIdea.id);
+    deleteIdea(deletingIdea.id);
+    setDeletingIdea(null);
   };
 
   const handleConfirmDeleteCampaign = () => {
     if (!deletingCampaign) return;
-    deleteCampaignMutation.mutate(deletingCampaign.id);
+    deleteCampaign(deletingCampaign.id);
+    setDeletingCampaign(null);
   };
 
   const handleEditorBack = () => {
@@ -441,11 +355,8 @@ export const IdeaBankPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDeleteIdea}
-              disabled={deleteIdeaMutation.isPending}
-            >
-              {deleteIdeaMutation.isPending ? "Deletando..." : "Deletar"}
+            <AlertDialogAction onClick={handleConfirmDeleteIdea}>
+              Deletar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -468,11 +379,8 @@ export const IdeaBankPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDeleteCampaign}
-              disabled={deleteCampaignMutation.isPending}
-            >
-              {deleteCampaignMutation.isPending ? "Deletando..." : "Deletar"}
+            <AlertDialogAction onClick={handleConfirmDeleteCampaign}>
+              Deletar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

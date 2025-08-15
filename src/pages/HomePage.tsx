@@ -2,7 +2,7 @@ import { StatsGrid, ToastDemoCard, WelcomeCard } from "@/components/home";
 import { LoadingPage } from "@/components/ui";
 import { useHomePage } from "@/hooks/useHomePage";
 
-export function HomePage() {
+export const HomePage = () => {
   const {
     isLoading,
     userGreeting,
@@ -42,4 +42,4 @@ export function HomePage() {
       <StatsGrid statsData={statsData} />
     </div>
   );
-}
+};

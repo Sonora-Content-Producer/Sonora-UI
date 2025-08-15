@@ -56,9 +56,9 @@ export {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
   NavigationMenuViewport,
 } from "./navigation-menu";
+
 export { Popover, PopoverContent, PopoverTrigger } from "./popover";
 export { RichTextEditor } from "./rich-text-editor";
 export {
@@ -93,4 +93,5 @@ export { PublicRoute } from "../PublicRoute";
 export { ThemeToggle } from "../ThemeToggle";
 
 // Export theme context
-export { ThemeProvider, useTheme } from "../../contexts/ThemeContext";
+export { ThemeProvider } from "../../contexts/ThemeContext";
+export { useTheme } from "../../hooks/useTheme";

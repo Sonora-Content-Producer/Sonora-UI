@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface JsonContentViewerProps {
   content: string;
@@ -122,7 +122,7 @@ export const JsonContentViewer = ({
   const [error, setError] = useState<string | null>(null);
 
   // Parse JSON content
-  const parseContent = () => {
+  const parseContent = useCallback(() => {
     try {
       // Se o conteúdo estiver vazio, criar um objeto vazio
       if (!content || content.trim() === "") {
@@ -138,12 +138,12 @@ export const JsonContentViewer = ({
       setError("Erro ao analisar JSON");
       setParsedContent(null);
     }
-  };
+  }, [content]);
 
   // Parse content on mount and when content changes
   useEffect(() => {
     parseContent();
-  }, [content]);
+  }, [content, parseContent]);
 
   // Handle field changes
   const handleFieldChange = (path: string[], value: string | string[]) => {

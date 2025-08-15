@@ -12,9 +12,9 @@ import {
   ThemeToggle,
 } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/lib/api";
+import { useSocialAccounts } from "@/hooks/useSocialAccounts";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 // Icons (using simple SVG icons since we don't have an icon library)
@@ -76,16 +76,6 @@ const navigationItems = [
   },
 ];
 
-interface SocialAccount {
-  id: number;
-  provider: string;
-  extra_data: {
-    email?: string;
-    name?: string;
-    picture?: string;
-  };
-}
-
 interface NavLinkProps {
   href: string;
   children: React.ReactNode;
@@ -111,30 +101,9 @@ export const DashboardLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [userPicture, setUserPicture] = useState<string | null>(null);
+  const { googleAccount } = useSocialAccounts();
 
-  // Buscar foto do usuário das contas sociais
-  useEffect(() => {
-    const fetchUserPicture = async () => {
-      try {
-        const response = await api.get("/api/v1/auth/social-accounts/");
-        const socialAccounts = response.data.social_accounts || [];
-        const googleAccount = socialAccounts.find(
-          (acc: SocialAccount) => acc.provider === "google"
-        );
-
-        if (googleAccount?.extra_data?.picture) {
-          setUserPicture(googleAccount.extra_data.picture);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar foto do usuário:", error);
-      }
-    };
-
-    if (user) {
-      fetchUserPicture();
-    }
-  }, [user]);
+  const userPicture = googleAccount?.extra_data?.picture || null;
 
   const handleLogout = () => {
     logout();

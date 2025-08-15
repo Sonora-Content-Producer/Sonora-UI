@@ -10,10 +10,9 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { useProfile } from "@/hooks/useProfile";
+import { useSocialAccounts } from "@/hooks/useSocialAccounts";
 import { useUserForm } from "@/hooks/useUserForm";
-import { api } from "@/lib/api";
 import { type User } from "@/types/auth";
-import { useEffect, useState } from "react";
 import { AvatarSection } from "./AvatarSection";
 import { UserFormSection } from "./UserFormSection";
 
@@ -47,10 +46,8 @@ export const BasicUserInfo = ({
   const { updateUserProfile, uploadAvatar, isUpdatingUserProfile } =
     useProfile();
   const { user: authUser } = useAuth();
-  const [isDisconnecting, setIsDisconnecting] = useState(false);
-  const [googleAccount, setGoogleAccount] = useState<SocialAccount | null>(
-    null
-  );
+  const { googleAccount, disconnectAccount, isDisconnecting } =
+    useSocialAccounts();
 
   // Debug logs
   console.log("BasicUserInfo renderizado");
@@ -78,39 +75,6 @@ export const BasicUserInfo = ({
     },
   });
 
-  // Buscar contas sociais conectadas
-  useEffect(() => {
-    console.log("useEffect executado, authUser:", authUser);
-
-    const fetchSocialAccounts = async () => {
-      try {
-        console.log("Fazendo requisição para /api/v1/auth/social-accounts/");
-        const response = await api.get("/api/v1/auth/social-accounts/");
-        console.log("Resposta da API:", response.data);
-
-        // A API retorna { social_accounts: [...], total_count: ... }
-        const socialAccounts = response.data.social_accounts || [];
-        const googleAcc = socialAccounts.find(
-          (acc: SocialAccount) => acc.provider === "google"
-        );
-
-        console.log("Contas sociais encontradas:", socialAccounts);
-        console.log("Conta Google:", googleAcc);
-
-        setGoogleAccount(googleAcc || null);
-      } catch (error) {
-        console.error("Erro ao buscar contas sociais:", error);
-      }
-    };
-
-    if (authUser) {
-      console.log("authUser existe, buscando contas sociais...");
-      fetchSocialAccounts();
-    } else {
-      console.log("authUser não existe ainda");
-    }
-  }, [authUser]);
-
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -124,17 +88,7 @@ export const BasicUserInfo = ({
   };
 
   const handleDisconnect = async (account: SocialAccount) => {
-    setIsDisconnecting(true);
-    try {
-      await api.delete(
-        `/api/v1/auth/social-accounts/${account.id}/disconnect/`
-      );
-      setGoogleAccount(null);
-    } catch (error) {
-      console.error("Erro ao desconectar conta:", error);
-    } finally {
-      setIsDisconnecting(false);
-    }
+    disconnectAccount(account.id);
   };
 
   return (

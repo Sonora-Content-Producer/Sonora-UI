@@ -1,72 +1,66 @@
-import { authApi } from "@/lib/auth";
-import { initiateGoogleOAuth } from "@/lib/google-oauth";
-import type { SocialAccount } from "@/types/auth";
+import { api } from "@/lib/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-export function useSocialAccounts() {
+interface SocialAccount {
+  id: number;
+  provider: string;
+  uid: string;
+  extra_data: {
+    email?: string;
+    name?: string;
+    picture?: string;
+  };
+  date_joined: string;
+}
+
+interface SocialAccountsResponse {
+  social_accounts: SocialAccount[];
+  total_count: number;
+}
+
+export const useSocialAccounts = () => {
   const queryClient = useQueryClient();
 
-  // Fetch social accounts
-  const socialAccountsQuery = useQuery({
-    queryKey: ["auth", "socialAccounts"],
-    queryFn: authApi.getSocialAccounts,
-  });
-
-  // Disconnect social account mutation
-  const disconnectMutation = useMutation({
-    mutationFn: authApi.disconnectSocialAccount,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["auth", "socialAccounts"] });
-      toast.success(
-        `Conta ${data.disconnected_provider} desconectada com sucesso`
-      );
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Falha ao desconectar conta");
+  const {
+    data: socialAccounts,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["social-accounts"],
+    queryFn: async (): Promise<SocialAccountsResponse> => {
+      const response = await api.get("/api/v1/auth/social-accounts/");
+      return response.data;
     },
   });
 
-  const handleDisconnect = (account: SocialAccount) => {
-    if (
-      confirm(
-        `Tem certeza de que deseja desconectar sua conta ${account.provider}?`
-      )
-    ) {
-      disconnectMutation.mutate(account.id);
-    }
-  };
+  const disconnectAccountMutation = useMutation({
+    mutationFn: async (accountId: number) => {
+      await api.delete(`/api/v1/auth/social-accounts/${accountId}/disconnect/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["social-accounts"] });
+      toast.success("Conta desconectada com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Erro ao desconectar conta:", error);
+      toast.error("Erro ao desconectar conta");
+    },
+  });
 
-  const handleConnectGoogle = () => {
-    try {
-      initiateGoogleOAuth();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Falha na conexão com Google"
-      );
-    }
-  };
-
-  const getGoogleAccount = () => {
-    return socialAccountsQuery.data?.social_accounts.find(
-      (acc) => acc.provider === "google"
-    );
-  };
+  const googleAccount = socialAccounts?.social_accounts?.find(
+    (acc) => acc.provider === "google"
+  );
 
   return {
-    // Data
-    socialAccountsData: socialAccountsQuery.data,
-    isLoading: socialAccountsQuery.isLoading,
-    error: socialAccountsQuery.error,
-
-    // Actions
-    handleDisconnect,
-    handleConnectGoogle,
-
-    // Helpers
-    getGoogleAccount,
-
-    // Mutation states
-    isDisconnecting: disconnectMutation.isPending,
+    socialAccounts: socialAccounts?.social_accounts || [],
+    totalCount: socialAccounts?.total_count || 0,
+    googleAccount,
+    isLoading,
+    error,
+    refetch,
+    disconnectAccount: disconnectAccountMutation.mutate,
+    isDisconnecting: disconnectAccountMutation.isPending,
   };
-}
+};

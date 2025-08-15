@@ -7,10 +7,10 @@ interface PublicRouteProps {
   redirectTo?: string;
 }
 
-export function PublicRoute({
+export const PublicRoute = ({
   children,
   redirectTo = "/ideabank",
-}: PublicRouteProps) {
+}: PublicRouteProps) => {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
@@ -27,4 +27,4 @@ export function PublicRoute({
 
   // Render the public component if not authenticated
   return <>{children}</>;
-}
+};

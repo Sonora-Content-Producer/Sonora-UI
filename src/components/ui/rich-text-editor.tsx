@@ -1,4 +1,4 @@
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import MDEditor from "@uiw/react-md-editor";
 import { Expand, Minimize } from "lucide-react";

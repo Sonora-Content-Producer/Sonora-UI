@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "@/hooks/useTheme";
 
 // Icons for theme toggle
 const SunIcon = () => (

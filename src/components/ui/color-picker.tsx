@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Label } from "./label";
@@ -32,12 +32,7 @@ const predefinedColors = [
   "#FFFFFF", // White
 ];
 
-export const ColorPicker = ({
-  value,
-  onChange,
-  label,
-  placeholder,
-}: ColorPickerProps) => {
+export const ColorPicker = ({ value, onChange, label }: ColorPickerProps) => {
   const [customColor, setCustomColor] = useState(value || "");
   const [isOpen, setIsOpen] = useState(false);
   const [hue, setHue] = useState(0);
@@ -57,13 +52,7 @@ export const ColorPicker = ({
     }
   }, [value]);
 
-  useEffect(() => {
-    if (canvasRef.current) {
-      drawColorSpectrum();
-    }
-  }, [hue]);
-
-  const drawColorSpectrum = () => {
+  const drawColorSpectrum = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -83,7 +72,13 @@ export const ColorPicker = ({
         ctx.fillRect(x, y, 1, 1);
       }
     }
-  };
+  }, [hue]);
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      drawColorSpectrum();
+    }
+  }, [hue, drawColorSpectrum]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -159,82 +154,60 @@ export const ColorPicker = ({
                 </div>
               </div>
 
-              {/* Espectro de Cores */}
+              {/* Canvas para Saturação e Luminosidade */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Espectro de Cores</Label>
-                <div className="relative">
-                  <canvas
-                    ref={canvasRef}
-                    width={200}
-                    height={150}
-                    className="w-full h-32 rounded border cursor-crosshair"
-                    onClick={handleCanvasClick}
-                    title="Clique para selecionar uma cor"
-                  />
-                  <div
-                    className="absolute w-3 h-3 border-2 border-white rounded-full pointer-events-none shadow-lg"
-                    style={{
-                      left: `${(saturation / 100) * 200}px`,
-                      top: `${((100 - lightness) / 100) * 150}px`,
-                      transform: "translate(-50%, -50%)",
-                    }}
-                  />
-                </div>
+                <Label className="text-sm font-medium">
+                  Saturação e Luminosidade
+                </Label>
+                <canvas
+                  ref={canvasRef}
+                  width={200}
+                  height={200}
+                  onClick={handleCanvasClick}
+                  className="border rounded-lg cursor-crosshair"
+                />
               </div>
 
               {/* Cores Predefinidas */}
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
                   Cores Predefinidas
                 </Label>
                 <div className="grid grid-cols-8 gap-2">
                   {predefinedColors.map((color) => (
                     <button
                       key={color}
-                      type="button"
+                      onClick={() => handleColorSelect(color)}
                       className={cn(
                         "w-8 h-8 rounded border-2 transition-all hover:scale-110",
-                        value === color ? "border-foreground" : "border-border"
+                        color === "#FFFFFF" && "border-gray-300"
                       )}
                       style={{ backgroundColor: color }}
-                      onClick={() => handleColorSelect(color)}
-                      title={color}
+                      aria-label={`Selecionar cor ${color}`}
                     />
                   ))}
                 </div>
               </div>
 
-              {/* Cor Personalizada */}
+              {/* Input de Cor Personalizada */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Cor Personalizada</Label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder={placeholder || "#FFFFFF"}
-                    value={customColor}
-                    onChange={(e) => handleCustomColorChange(e.target.value)}
-                    className="flex-1"
-                  />
-                  <div
-                    className="w-10 h-10 rounded border"
-                    style={{ backgroundColor: customColor || "#f3f4f6" }}
-                  />
-                </div>
+                <Input
+                  value={customColor}
+                  onChange={(e) => handleCustomColorChange(e.target.value)}
+                  placeholder="#000000"
+                  className="font-mono"
+                />
               </div>
             </div>
           </PopoverContent>
         </Popover>
-        <Input
-          placeholder={placeholder || "#FFFFFF"}
-          value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1"
-        />
       </div>
     </div>
   );
 };
 
-// Funções auxiliares para conversão de cores
+// Funções utilitárias para conversão de cores
 function hexToRgb(hex: string) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
@@ -272,6 +245,7 @@ function rgbToHsl(r: number, g: number, b: number) {
         h = (r - g) / d + 4;
         break;
     }
+
     h /= 6;
   }
 
@@ -283,51 +257,14 @@ function rgbToHsl(r: number, g: number, b: number) {
 }
 
 function hslToHex(h: number, s: number, l: number) {
-  s /= 100;
   l /= 100;
-
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-  let r = 0;
-  let g = 0;
-  let b = 0;
-
-  if (0 <= h && h < 60) {
-    r = c;
-    g = x;
-    b = 0;
-  } else if (60 <= h && h < 120) {
-    r = x;
-    g = c;
-    b = 0;
-  } else if (120 <= h && h < 180) {
-    r = 0;
-    g = c;
-    b = x;
-  } else if (180 <= h && h < 240) {
-    r = 0;
-    g = x;
-    b = c;
-  } else if (240 <= h && h < 300) {
-    r = x;
-    g = 0;
-    b = c;
-  } else if (300 <= h && h < 360) {
-    r = c;
-    g = 0;
-    b = x;
-  }
-
-  const rHex = Math.round((r + m) * 255)
-    .toString(16)
-    .padStart(2, "0");
-  const gHex = Math.round((g + m) * 255)
-    .toString(16)
-    .padStart(2, "0");
-  const bHex = Math.round((b + m) * 255)
-    .toString(16)
-    .padStart(2, "0");
-
-  return `#${rHex}${gHex}${bHex}`;
+  const a = (s * Math.min(l, 1 - l)) / 100;
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
 }

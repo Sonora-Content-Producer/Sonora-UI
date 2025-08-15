@@ -30,8 +30,17 @@ export const GeminiKeyOverlay = ({ onClose }: GeminiKeyOverlayProps) => {
       queryClient.invalidateQueries({ queryKey: ["gemini-key-status"] });
       onClose();
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Erro ao salvar chave da API");
+    onError: (error: unknown) => {
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { error?: string } };
+        };
+        toast.error(
+          axiosError.response?.data?.error || "Erro ao salvar chave da API"
+        );
+      } else {
+        toast.error("Erro ao salvar chave da API");
+      }
     },
   });
 
